@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>لعبة الأنابيب</title>
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+text-align:center;
+}
+
+h1{margin:10px}
+
+#ui{
+display:flex;
+justify-content:center;
+gap:20px;
+margin:10px;
+font-size:18px;
+}
+
+#game{
+display:flex;
+justify-content:center;
+gap:15px;
+margin-top:30px;
+flex-wrap:wrap;
+}
+
+.pipe{
+width:80px;
+height:300px;
+border:3px solid white;
+border-radius:20px;
+display:flex;
+flex-direction:column-reverse;
+align-items:center;
+padding:5px;
+background:rgba(255,255,255,0.05);
+position:relative;
+}
+
+.ball{
+width:60px;
+height:60px;
+border-radius:50%;
+margin:3px;
+cursor:grab;
+}
+
+.red{background:red;}
+.blue{background:blue;}
+.green{background:green;}
+.yellow{background:yellow;}
+
+button{
+margin-top:20px;
+padding:10px 20px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:16px;
+}
+
+#msg{
+margin-top:10px;
+font-size:20px;
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 لعبة الأنابيب</h1>
+
+<div id="ui">
+<div>Level: <span id="level">1</span></div>
+<div>Moves: <span id="moves">0</span></div>
+</div>
+
+<div id="game"></div>
+
+<div id="msg"></div>
+
+<button onclick="nextLevel()">المستوى التالي ⬆</button>
+
+<script>
+// ===== إعدادات =====
+let level = 1;
+let moves = 0;
+
+const colors = ["red","blue","green","yellow"];
+
+const game = document.getElementById("game");
+const msg = document.getElementById("msg");
+
+function playSound(type){
+let ctx = new (window.AudioContext || window.webkitAudioContext)();
+let o = ctx.createOscillator();
+let gain = ctx.createGain();
+
+o.connect(gain);
+gain.connect(ctx.destination);
+
+if(type==="win") o.frequency.value = 800;
+else if(type==="move") o.frequency.value = 300;
+else o.frequency.value = 150;
+
+o.start();
+gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+o.stop(ctx.currentTime + 0.2);
+}
+
+// ===== إنشاء مستوى =====
+function createLevel(){
+game.innerHTML="";
+moves = 0;
+updateUI();
+
+let pipesCount = level + 2;
+
+for(let i=0;i<pipesCount;i++){
+let pipe = document.createElement("div");
+pipe.className="pipe";
+pipe.ondragover=e=>e.preventDefault();
+pipe.ondrop=drop;
+
+game.appendChild(pipe);
+}
+
+// كرات
+let ballsCount = level + 2;
+
+for(let i=0;i<ballsCount;i++){
+let ball = document.createElement("div");
+ball.className="ball "+colors[i%colors.length];
+ball.draggable=true;
+ball.ondragstart=drag;
+
+game.children[i%pipesCount].appendChild(ball);
+}
+}
+
+let dragged = null;
+
+function drag(e){
+dragged = e.target;
+}
+
+function drop(e){
+if(dragged){
+e.currentTarget.appendChild(dragged);
+moves++;
+updateUI();
+playSound("move");
+checkWin();
+}
+}
+
+function updateUI(){
+document.getElementById("level").textContent=level;
+document.getElementById("moves").textContent=moves;
+}
+
+// ===== فحص الفوز =====
+function checkWin(){
+let pipes = document.querySelectorAll(".pipe");
+
+let win = true;
+
+pipes.forEach(pipe=>{
+let balls = pipe.querySelectorAll(".ball");
+if(balls.length>0){
+let color = balls[0].classList[1];
+for(let b of balls){
+if(!b.classList.contains(color)) win=false;
+}
+}
+});
+
+if(win){
+msg.textContent="🎉 فزت بالمستوى!";
+playSound("win");
+}
+}
+
+// ===== مستوى جديد =====
+function nextLevel(){
+level++;
+msg.textContent="";
+createLevel();
+}
+
+// البداية
+createLevel();
+</script>
+
+</body>
+</html>
